@@ -1,0 +1,58 @@
+version: 2
+
+sources:
+  - name: billing
+    description: Raw subscription and plan tables from the billing extract.
+    schema: raw
+    tables:
+      - name: subscriptions
+      - name: plans
+
+models:
+  - name: stg_subscriptions
+    description: >
+      One row per subscription, typed and normalized. Grain: subscription_id.
+    columns:
+      - name: subscription_id
+        data_tests:
+          - unique
+          - not_null
+      - name: status
+        data_tests:
+          - accepted_values:
+              values: ["trialing", "active", "past_due", "canceled"]
+      - name: quantity
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: "quantity >= 0"
+
+  - name: dim_plans
+    description: One row per sellable plan.
+    columns:
+      - name: plan_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fct_mrr
+    description: >
+      Monthly recurring revenue. Grain: one row per subscription per month in
+      which it was active. mrr_cents = quantity * unit_price_cents.
+    columns:
+      - name: mrr_row_id
+        data_tests:
+          - unique
+          - not_null
+      - name: subscription_id
+        data_tests:
+          - not_null
+      - name: plan_id
+        data_tests:
+          - relationships:
+              to: ref('dim_plans')
+              field: plan_id
+      - name: mrr_cents
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "mrr_cents >= 0"
