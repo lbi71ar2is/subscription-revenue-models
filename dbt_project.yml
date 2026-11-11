@@ -1,0 +1,16 @@
+name: subscription_revenue_models
+version: 1.0.0
+config-version: 2
+
+profile: subscription_revenue_models
+
+model-paths: ["models"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  subscription_revenue_models:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
